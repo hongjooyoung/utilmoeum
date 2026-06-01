@@ -128,6 +128,8 @@
 let totalWin   = 1;       // 당첨자 수
 let balls      = [];      // 공 목록
 let pegs       = [];      // 핀 목록
+let bumpers    = [];      // 팝 범퍼(강한 반발)
+let bars       = [];      // 회전 스피너 + 정적 디플렉터
 let finishers  = [];      // 골인 순서대로 이름
 let W = 0, H = 0;         // 아레나 논리 크기(px)
 let goalY = 0;            // 골인 라인 y
@@ -136,11 +138,13 @@ let lastT = 0;
 let raceOver = false;
 
 // 물리 상수
-const GRAV      = 1500;   // 중력 px/s²
+const GRAV      = 1400;   // 중력 px/s²
 const PEG_REST  = 0.55;   // 핀 반발
 const WALL_REST = 0.7;    // 벽 반발
 const BALL_REST = 0.6;    // 공끼리 반발
-const SUB       = 5;      // 서브스텝
+const BUMP_KICK = 560;    // 범퍼 팝 세기 px/s
+const MAX_SPEED = 1700;   // 최대 속도 제한
+const SUB       = 6;      // 서브스텝
 const PEG_R     = 5;
 
 const BALL_COLORS = ['#60a5fa','#f59e0b','#34d399','#f87171','#a78bfa',
@@ -200,7 +204,8 @@ const ctx    = canvas.getContext('2d');
 function buildArena(names) {
   const wrap = canvas.parentElement;
   const cssW = wrap.clientWidth;
-  const cssH = Math.max(440, Math.min(620, Math.round(cssW * 1.05)));
+  // 아레나 세로 공간 2배 — 더 긴 레이스
+  const cssH = Math.max(820, Math.min(1280, Math.round(cssW * 1.95)));
   const dpr  = window.devicePixelRatio || 1;
 
   canvas.width  = cssW * dpr;
@@ -211,34 +216,71 @@ function buildArena(names) {
   W = cssW; H = cssH;
   goalY = H - 56;
 
-  // 핀 배치 (지그재그 — 파친코 스타일)
   const cols     = Math.max(4, Math.min(9, Math.round(W / 72)));
   const spacingX = W / (cols + 1);
-  const spacingY = 56;
-  const topPad   = 150;            // 공이 쏟아질 상단 여백
-  pegs = [];
-  for (let row = 0; (topPad + row * spacingY) < goalY - 40; row++) {
+  const spacingY = 64;
+  const top      = 150;            // 공이 쏟아질 상단 여백
+  const bottom   = goalY - 40;
+  const span     = bottom - top;
+
+  pegs = []; bars = []; bumpers = [];
+
+  // ── 핀 그리드 (지그재그 + 지터 + 랜덤 구멍으로 불규칙하게) ──
+  let row = 0;
+  for (let y = top; y < bottom; y += spacingY, row++) {
     const offset = (row % 2 === 0) ? 0 : spacingX / 2;
-    const py = topPad + row * spacingY;
     for (let c = 0; c <= cols; c++) {
-      const px = offset + c * spacingX + spacingX / 2;
-      if (px > 6 && px < W - 6) pegs.push({ x: px, y: py });
+      if (Math.random() < 0.13) continue;                 // 구멍
+      const px = offset + c * spacingX + spacingX / 2 + (Math.random() - 0.5) * 12;
+      const py = y + (Math.random() - 0.5) * 10;
+      if (px > 12 && px < W - 12) pegs.push({ x: px, y: py });
     }
   }
 
-  // 공 생성
-  const r = Math.max(13, Math.min(20, spacingX * 0.26));
+  // ── 회전 스피너(파친코 풍차) — 여러 층, 좌우 번갈아 회전 ──
+  [0.26, 0.42, 0.58, 0.74, 0.88].forEach((fy, k) => {
+    bars.push({
+      cx: (k % 2 === 0) ? W * 0.36 : W * 0.64,
+      cy: top + span * fy,
+      half: spacingX * 1.15,
+      angle: Math.random() * Math.PI,
+      omega: (k % 2 === 0 ? 1 : -1) * (3.2 + Math.random() * 1.6),
+      th: 7, rest: 0.85, spin: true,
+    });
+  });
+  // 중앙 대형 스피너
+  bars.push({
+    cx: W / 2, cy: top + span * 0.50,
+    half: spacingX * 1.5, angle: 0,
+    omega: (Math.random() < 0.5 ? 1 : -1) * 2.6,
+    th: 8, rest: 0.85, spin: true,
+  });
+
+  // ── 비스듬한 정적 디플렉터(벽) — 레인을 좌우로 꺾어줌 ──
+  bars.push({ cx: W * 0.13, cy: top + span * 0.34, half: W * 0.14, angle:  0.55, omega: 0, th: 6, rest: 0.55 });
+  bars.push({ cx: W * 0.87, cy: top + span * 0.46, half: W * 0.14, angle: -0.55, omega: 0, th: 6, rest: 0.55 });
+  bars.push({ cx: W * 0.15, cy: top + span * 0.66, half: W * 0.13, angle:  0.6,  omega: 0, th: 6, rest: 0.55 });
+  bars.push({ cx: W * 0.85, cy: top + span * 0.80, half: W * 0.13, angle: -0.6,  omega: 0, th: 6, rest: 0.55 });
+
+  // ── 팝 범퍼 — 닿으면 강하게 튕겨내 큰 변수 발생 ──
+  [[0.30,0.30],[0.70,0.36],[0.50,0.46],[0.22,0.54],[0.78,0.60],
+   [0.42,0.66],[0.62,0.72],[0.34,0.82],[0.66,0.86]].forEach(([fx, fy]) => {
+    bumpers.push({ x: W * fx, y: top + span * fy, r: 15 + Math.random() * 7, flash: 0 });
+  });
+
+  // ── 공 생성 (시차 드롭 + 다양한 초기 속도) ──
+  const r = Math.max(12, Math.min(18, spacingX * 0.24));
   balls = names.map((name, i) => ({
     name,
     x:  r + Math.random() * (W - 2 * r),
-    y:  -(Math.random() * 320 + 20),   // 위에서 시차를 두고 쏟아짐
-    vx: (Math.random() - 0.5) * 80,
-    vy: 0,
+    y:  -(Math.random() * Math.max(420, H * 0.45) + 20),  // 위에서 시차를 두고 쏟아짐
+    vx: (Math.random() - 0.5) * 170,
+    vy:  Math.random() * 60,
     r,
     color: BALL_COLORS[i % BALL_COLORS.length],
-    finished: false,
-    win: false,
+    finished: false, win: false,
     label: fitLabel(name, r),
+    tx: 0, ty: 0,                                          // 잔상용 직전 좌표
   }));
 
   finishers = [];
@@ -282,6 +324,8 @@ function loop(now) {
   lastT = now;
   if (dt > 0.033) dt = 0.033;        // 프레임 끊김 시 터널링 방지
 
+  for (const b of balls) { b.tx = b.x; b.ty = b.y; }   // 잔상 기준점(프레임 시작 위치)
+
   const sdt = dt / SUB;
   for (let s = 0; s < SUB; s++) physics(sdt);
 
@@ -291,7 +335,59 @@ function loop(now) {
   raf = requestAnimationFrame(loop);
 }
 
+// 스피너 바 충돌 (캡슐) — 회전 표면 속도를 공에 전달해 후려침
+function ballVsBar(b, bar) {
+  const dirx = Math.cos(bar.angle), diry = Math.sin(bar.angle);
+  const p1x = bar.cx - dirx * bar.half, p1y = bar.cy - diry * bar.half;
+  const abx = dirx * bar.half * 2, aby = diry * bar.half * 2;
+  let t = ((b.x - p1x) * abx + (b.y - p1y) * aby) / (abx * abx + aby * aby);
+  t = t < 0 ? 0 : t > 1 ? 1 : t;
+  const cx = p1x + abx * t, cy = p1y + aby * t;
+  const dx = b.x - cx, dy = b.y - cy;
+  const d2 = dx * dx + dy * dy;
+  const min = b.r + bar.th;
+  if (d2 < min * min && d2 > 0.0001) {
+    const d = Math.sqrt(d2);
+    const nx = dx / d, ny = dy / d;
+    b.x += nx * (min - d); b.y += ny * (min - d);
+    // 접점의 회전 표면 속도 (ω × r)
+    const rx = cx - bar.cx, ry = cy - bar.cy;
+    const vsx = -bar.omega * ry, vsy = bar.omega * rx;
+    const vdot = (b.vx - vsx) * nx + (b.vy - vsy) * ny;
+    if (vdot < 0) {
+      const j = -(1 + bar.rest) * vdot;
+      b.vx += j * nx; b.vy += j * ny;
+    }
+  }
+}
+
+// 팝 범퍼 충돌 — 항상 최소 BUMP_KICK 이상으로 강하게 튕겨냄
+function ballVsBumper(b, bp) {
+  const dx = b.x - bp.x, dy = b.y - bp.y;
+  const d2 = dx * dx + dy * dy;
+  const min = b.r + bp.r;
+  if (d2 < min * min && d2 > 0.0001) {
+    const d = Math.sqrt(d2);
+    const nx = dx / d, ny = dy / d;
+    b.x += nx * (min - d); b.y += ny * (min - d);
+    let vn = b.vx * nx + b.vy * ny;
+    if (vn < 0) { b.vx -= 1.4 * vn * nx; b.vy -= 1.4 * vn * ny; vn = b.vx * nx + b.vy * ny; }
+    if (vn < BUMP_KICK) { const add = BUMP_KICK - vn; b.vx += add * nx; b.vy += add * ny; }
+    const spin = (Math.random() - 0.5) * BUMP_KICK * 0.7;   // 접선 방향 무작위 회전
+    b.vx += -ny * spin; b.vy += nx * spin;
+    bp.flash = 1;
+  }
+}
+
+function clampSpeed(b) {
+  const s2 = b.vx * b.vx + b.vy * b.vy;
+  if (s2 > MAX_SPEED * MAX_SPEED) { const k = MAX_SPEED / Math.sqrt(s2); b.vx *= k; b.vy *= k; }
+}
+
 function physics(dt) {
+  // 스피너 회전
+  for (const bar of bars) if (bar.omega) bar.angle += bar.omega * dt;
+
   for (const b of balls) {
     if (b.finished) {                 // 골인한 공은 그대로 떨어져 사라짐
       b.vy += GRAV * dt;
@@ -319,10 +415,16 @@ function physics(dt) {
         if (vdot < 0) {
           b.vx -= (1 + PEG_REST) * vdot * nx;
           b.vy -= (1 + PEG_REST) * vdot * ny;
-          b.vx += (Math.random() - 0.5) * 60;    // 약간의 혼돈
+          b.vx += (Math.random() - 0.5) * 70;    // 약간의 혼돈
         }
       }
     }
+
+    // 범퍼 · 스피너/디플렉터 충돌
+    for (const bp of bumpers) ballVsBumper(b, bp);
+    for (const bar of bars)   ballVsBar(b, bar);
+
+    clampSpeed(b);
   }
 
   // 공끼리 충돌
@@ -395,6 +497,51 @@ function drawScene() {
     ctx.fill();
   }
 
+  // 바 (스피너 / 디플렉터)
+  ctx.lineCap = 'round';
+  for (const bar of bars) {
+    const dirx = Math.cos(bar.angle), diry = Math.sin(bar.angle);
+    ctx.lineWidth = bar.th * 2;
+    ctx.strokeStyle = bar.spin ? 'rgba(244,114,182,.92)' : 'rgba(148,163,184,.55)';
+    ctx.beginPath();
+    ctx.moveTo(bar.cx - dirx * bar.half, bar.cy - diry * bar.half);
+    ctx.lineTo(bar.cx + dirx * bar.half, bar.cy + diry * bar.half);
+    ctx.stroke();
+    if (bar.spin) {
+      ctx.fillStyle = 'rgba(255,255,255,.55)';
+      ctx.beginPath(); ctx.arc(bar.cx, bar.cy, 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // 범퍼
+  for (const bp of bumpers) {
+    ctx.beginPath();
+    ctx.arc(bp.x, bp.y, bp.r, 0, Math.PI * 2);
+    ctx.fillStyle   = `rgba(56,189,248,${0.22 + bp.flash * 0.5})`;
+    ctx.fill();
+    ctx.lineWidth   = 3;
+    ctx.strokeStyle = `rgba(125,211,252,${0.45 + bp.flash * 0.55})`;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(bp.x, bp.y, bp.r * 0.42, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${0.3 + bp.flash * 0.5})`;
+    ctx.fill();
+    bp.flash = Math.max(0, bp.flash - 0.08);
+  }
+
+  // 공 잔상(트레일)
+  ctx.lineCap = 'round';
+  for (const b of balls) {
+    if (b.finished || b.y - b.r > H) continue;
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = b.r * 1.4;
+    ctx.beginPath();
+    ctx.moveTo(b.tx, b.ty); ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
   // 공
   for (const b of balls) {
     if (b.y - b.r > H) continue;       // 화면 밖으로 떨어진 공
@@ -437,7 +584,7 @@ function finishRace() {
 function resetLottery() {
   if (raf) cancelAnimationFrame(raf);
   raf = null;
-  balls = []; pegs = []; finishers = []; raceOver = true;
+  balls = []; pegs = []; bumpers = []; bars = []; finishers = []; raceOver = true;
   $('#lotteryCard').hide();
   $('#resultCard').hide();
   $('#winnerList').empty();
