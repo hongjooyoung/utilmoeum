@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>연봉 실수령액 계산기 2024 - 유틸모음</title>
+  <meta name="description" content="2024년 기준 연봉 실수령액 계산기. 국민연금·건강보험·고용보험·소득세를 자동 계산합니다." />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ────────────── 헤더 ────────────── -->
+<header class="site-header py-3">
+  <div class="container d-flex align-items-center justify-content-between">
+    <a href="index.html" class="site-logo">⚙️ 유틸모음</a>
+    <a href="index.html" class="btn btn-sm btn-outline-secondary">← 목록으로</a>
+  </div>
+</header>
+
+<!-- ────────────── 광고: 헤더 하단 728x90 ────────────── -->
+<div class="py-2 bg-white border-bottom">
+  <div class="container d-flex justify-content-center">
+    <!-- 카카오 애드핏 실제 코드로 교체하세요 (728x90) -->
+    <!-- <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-XXXXXXXXXXXXXXXX"
+         data-ad-width="728"
+         data-ad-height="90"></ins>
+    <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script> -->
+    <div class="ad-slot ad-header">광고 (728×90)</div>
+  </div>
+</div>
+
+<!-- ────────────── 본문 ────────────── -->
+<main class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-7">
+
+      <!-- 입력 카드 -->
+      <div class="calc-card mb-4">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span style="font-size:1.6rem;">💰</span>
+          <span class="calc-title">연봉 실수령액 계산기</span>
+        </div>
+        <p class="text-muted small mb-4">2024년 기준 요율 적용 · 부양가족 없음(기본) 기준</p>
+
+        <div class="mb-3">
+          <label for="annualSalary" class="form-label fw-semibold">연봉 입력</label>
+          <div class="input-group">
+            <input
+              type="number"
+              id="annualSalary"
+              class="form-control form-control-lg"
+              placeholder="예: 4000"
+              min="1"
+              max="100000"
+            />
+            <span class="input-group-text">만원</span>
+          </div>
+          <div class="form-text">세전 연봉(상여 포함 세전 총액)을 만원 단위로 입력하세요.</div>
+        </div>
+
+        <button class="btn-calc" id="calcBtn" onclick="calculate()">계산하기</button>
+      </div>
+
+      <!-- 결과 영역 (처음에는 숨김) -->
+      <div id="resultArea" style="display:none;">
+
+        <!-- 월 실수령액 -->
+        <div class="result-box mb-4">
+          <div class="label">월 실수령액 (세후)</div>
+          <div class="amount" id="netMonthly">—</div>
+          <div class="sub" id="grossInfo">—</div>
+        </div>
+
+        <!-- 공제 상세 테이블 -->
+        <div class="calc-card mb-4">
+          <h3 class="fw-bold mb-3" style="font-size:1rem;">월 공제 내역 상세</h3>
+          <div class="deduction-table">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>항목</th>
+                  <th class="text-end">금액</th>
+                  <th class="text-center" style="width:70px;">요율</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="tag tag-ins me-1">보험</span> 국민연금</td>
+                  <td class="text-end" id="nationalPension">—</td>
+                  <td class="text-center text-muted small">4.50%</td>
+                </tr>
+                <tr>
+                  <td><span class="tag tag-ins me-1">보험</span> 건강보험</td>
+                  <td class="text-end" id="healthInsurance">—</td>
+                  <td class="text-center text-muted small">3.545%</td>
+                </tr>
+                <tr>
+                  <td><span class="tag tag-ins me-1">보험</span> 장기요양보험</td>
+                  <td class="text-end" id="longTermCare">—</td>
+                  <td class="text-center text-muted small">12.95%<span class="d-block" style="font-size:.65rem;">*건보료 기준</span></td>
+                </tr>
+                <tr>
+                  <td><span class="tag tag-ins me-1">보험</span> 고용보험</td>
+                  <td class="text-end" id="employmentInsurance">—</td>
+                  <td class="text-center text-muted small">0.90%</td>
+                </tr>
+                <tr>
+                  <td><span class="tag tag-tax me-1">세금</span> 소득세</td>
+                  <td class="text-end" id="incomeTax">—</td>
+                  <td class="text-center text-muted small">누진세율</td>
+                </tr>
+                <tr>
+                  <td><span class="tag tag-tax me-1">세금</span> 지방소득세</td>
+                  <td class="text-end" id="localTax">—</td>
+                  <td class="text-center text-muted small">소득세×10%</td>
+                </tr>
+                <tr class="total-row">
+                  <td class="fw-bold">총 공제액</td>
+                  <td class="text-end fw-bold" id="totalDeduction">—</td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 연간 요약 -->
+          <div class="mt-3 p-3 rounded" style="background:var(--bg-light); font-size:.85rem;">
+            <div class="row g-2 text-center">
+              <div class="col-4">
+                <div class="text-muted">연 세전 급여</div>
+                <div class="fw-bold" id="annualGross">—</div>
+              </div>
+              <div class="col-4">
+                <div class="text-muted">연 총 공제</div>
+                <div class="fw-bold text-danger" id="annualDeduction">—</div>
+              </div>
+              <div class="col-4">
+                <div class="text-muted">연 실수령</div>
+                <div class="fw-bold text-primary" id="annualNet">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 광고: 결과 바로 아래 300x250 -->
+        <div class="d-flex justify-content-center mb-4">
+          <!-- 카카오 애드핏 실제 코드로 교체하세요 (300x250) -->
+          <!-- <ins class="kakao_ad_area" style="display:none;"
+               data-ad-unit="DAN-XXXXXXXXXXXXXXXX"
+               data-ad-width="300"
+               data-ad-height="250"></ins>
+          <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script> -->
+          <div class="ad-slot ad-result">광고 (300×250)</div>
+        </div>
+
+        <!-- 계산 기준 안내 -->
+        <div class="calc-card" style="font-size:.82rem; color:var(--text-muted);">
+          <p class="fw-semibold text-dark mb-2">📌 계산 기준 안내</p>
+          <ul class="mb-0 ps-3">
+            <li>2024년 적용 요율 기준 (국민연금 4.5%, 건강보험 3.545%, 장기요양 12.95%, 고용보험 0.9%)</li>
+            <li>국민연금 기준 소득월액 상한: <strong>590만원</strong></li>
+            <li>소득세는 근로소득 공제 및 기본공제(본인 1인) 적용, 부양가족 없음 기준</li>
+            <li>실제 수령액은 회사 규모·비과세 항목·부양가족 수에 따라 다를 수 있습니다</li>
+            <li>본 계산 결과는 참고용이며 법적 효력이 없습니다</li>
+          </ul>
+        </div>
+
+      </div><!-- /resultArea -->
+
+    </div>
+  </div>
+</main>
+
+<!-- ────────────── 푸터 ────────────── -->
+<footer class="site-footer py-4">
+  <div class="container">
+    <div class="d-flex justify-content-center mb-3">
+      <div class="ad-slot ad-footer">광고 (320×50)</div>
+    </div>
+    <div class="text-center">
+      <p class="mb-1">© 2024 유틸모음. 제공하는 계산 결과는 참고용이며 법적 효력이 없습니다.</p>
+      <p class="mb-0"><a href="#">이용약관</a> · <a href="#">개인정보처리방침</a></p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+// ─────────────────────────────────────────
+//  2024년 연봉 실수령액 계산 로직
+// ─────────────────────────────────────────
+
+function fmt(n) {
+  return Math.round(n).toLocaleString('ko-KR') + '원';
+}
+
+function calcIncomeTax(annual) {
+  // 근로소득공제
+  let deduction;
+  if (annual <= 5_000_000)       deduction = annual * 0.70;
+  else if (annual <= 15_000_000) deduction = 3_500_000 + (annual - 5_000_000) * 0.40;
+  else if (annual <= 45_000_000) deduction = 7_500_000 + (annual - 15_000_000) * 0.15;
+  else if (annual <= 100_000_000)deduction = 12_000_000 + (annual - 45_000_000) * 0.05;
+  else                            deduction = 14_750_000;
+
+  const earnedIncome = annual - deduction;
+
+  // 인적공제 본인 150만원 + 표준세액공제 13만원 대신 소득공제 적용
+  // 국민연금·건강보험 공제는 이미 납부액 추정치로 대체하기 어려우므로
+  // 기본공제 150만원 + 근로소득세액공제로 처리
+  const personalDeduction = 1_500_000;
+  const taxableIncome = Math.max(0, earnedIncome - personalDeduction);
+
+  // 세율 (2024)
+  let tax;
+  if (taxableIncome <= 14_000_000)       tax = taxableIncome * 0.06;
+  else if (taxableIncome <= 50_000_000)  tax = 840_000   + (taxableIncome - 14_000_000) * 0.15;
+  else if (taxableIncome <= 88_000_000)  tax = 6_240_000 + (taxableIncome - 50_000_000) * 0.24;
+  else if (taxableIncome <= 150_000_000) tax = 15_360_000+ (taxableIncome - 88_000_000) * 0.35;
+  else if (taxableIncome <= 300_000_000) tax = 37_060_000+ (taxableIncome - 150_000_000)* 0.38;
+  else if (taxableIncome <= 500_000_000) tax = 94_060_000+ (taxableIncome - 300_000_000)* 0.40;
+  else if (taxableIncome <= 1_000_000_000) tax=174_060_000+(taxableIncome-500_000_000)  * 0.42;
+  else                                   tax =384_060_000+ (taxableIncome -1_000_000_000)*0.45;
+
+  // 근로소득세액공제
+  let credit = tax <= 1_300_000 ? tax * 0.55 : 715_000 + (tax - 1_300_000) * 0.30;
+  const creditLimit = annual <= 33_000_000 ? 740_000 : annual <= 70_000_000 ? 660_000 : 500_000;
+  credit = Math.min(credit, creditLimit);
+
+  // 표준세액공제 13만원
+  const finalAnnualTax = Math.max(0, tax - credit - 130_000);
+  return Math.round(finalAnnualTax / 12); // 월 소득세
+}
+
+function calculate() {
+  const inputVal = parseFloat($('#annualSalary').val());
+
+  if (!inputVal || inputVal <= 0) {
+    alert('연봉을 올바르게 입력해주세요.');
+    return;
+  }
+
+  const annual  = inputVal * 10_000; // 원 단위
+  const monthly = annual / 12;
+
+  // ── 4대보험 ──
+  // 국민연금 4.5% (상한 590만원)
+  const npBase = Math.min(monthly, 5_900_000);
+  const nationalPension = Math.round(npBase * 0.045);
+
+  // 건강보험 3.545%
+  const healthInsurance = Math.round(monthly * 0.03545);
+
+  // 장기요양보험 = 건보료 × 12.95%
+  const longTermCare = Math.round(healthInsurance * 0.1295);
+
+  // 고용보험 0.9%
+  const employmentInsurance = Math.round(monthly * 0.009);
+
+  // ── 세금 ──
+  const incomeTax = calcIncomeTax(annual);
+  const localTax  = Math.round(incomeTax * 0.10);
+
+  // ── 합산 ──
+  const totalDeduction = nationalPension + healthInsurance + longTermCare
+                        + employmentInsurance + incomeTax + localTax;
+  const netMonthly = Math.round(monthly - totalDeduction);
+
+  // ── DOM 업데이트 ──
+  $('#netMonthly').text(fmt(netMonthly));
+  $('#grossInfo').text(`월 세전 ${fmt(monthly)} / 연봉 ${inputVal.toLocaleString()}만원`);
+
+  $('#nationalPension').text(fmt(nationalPension));
+  $('#healthInsurance').text(fmt(healthInsurance));
+  $('#longTermCare').text(fmt(longTermCare));
+  $('#employmentInsurance').text(fmt(employmentInsurance));
+  $('#incomeTax').text(fmt(incomeTax));
+  $('#localTax').text(fmt(localTax));
+  $('#totalDeduction').text(fmt(totalDeduction));
+
+  $('#annualGross').text(fmt(annual));
+  $('#annualDeduction').text(fmt(totalDeduction * 12));
+  $('#annualNet').text(fmt(netMonthly * 12));
+
+  $('#resultArea').fadeIn(300);
+  $('html, body').animate({ scrollTop: $('#resultArea').offset().top - 20 }, 400);
+}
+
+// 엔터키 지원
+$('#annualSalary').on('keydown', function (e) {
+  if (e.key === 'Enter') calculate();
+});
+</script>
+</body>
+</html>

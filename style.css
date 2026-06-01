@@ -1,0 +1,175 @@
+:root {
+  --primary: #1a56db;
+  --primary-dark: #1e429f;
+  --primary-light: #e8f0fe;
+  --text-dark: #1f2937;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+  --bg-light: #f9fafb;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--text-dark);
+  background: var(--bg-light);
+}
+
+/* ── 헤더 ── */
+.site-header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.site-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+}
+.site-logo:hover { color: var(--primary-dark); }
+
+/* ── 광고 슬롯 ── */
+.ad-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: 1px dashed #d1d5db;
+  color: var(--text-muted);
+  font-size: .75rem;
+  margin: 0 auto;
+  border-radius: 4px;
+}
+.ad-header  { width: 728px; height: 90px; max-width: 100%; }
+.ad-result  { width: 300px; height: 250px; }
+.ad-footer  { width: 320px; height: 50px; max-width: 100%; }
+
+/* ── 메인 히어로 ── */
+.hero {
+  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+  color: #fff;
+  padding: 3rem 0 2.5rem;
+}
+.hero h1 { font-size: 2rem; font-weight: 800; }
+.hero p   { opacity: .85; }
+
+/* ── 도구 카드 ── */
+.tool-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: box-shadow .2s, transform .2s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.tool-card:hover {
+  box-shadow: 0 8px 24px rgba(26,86,219,.12);
+  transform: translateY(-2px);
+  color: inherit;
+}
+.tool-card .card-icon {
+  width: 52px; height: 52px;
+  background: var(--primary-light);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+}
+.tool-card .card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: .25rem;
+}
+.tool-card .card-desc {
+  font-size: .85rem;
+  color: var(--text-muted);
+}
+.badge-new {
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: .7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+/* ── 계산기 페이지 ── */
+.calc-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+}
+.calc-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+.input-group-text { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+}
+.btn-calc {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: .75rem 2rem;
+  border-radius: 10px;
+  border: none;
+  width: 100%;
+  transition: background .2s;
+}
+.btn-calc:hover { background: var(--primary-dark); color: #fff; }
+
+/* ── 결과 박스 ── */
+.result-box {
+  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+  border-radius: 14px;
+  padding: 1.5rem;
+  color: #fff;
+  text-align: center;
+}
+.result-box .label { font-size: .9rem; opacity: .85; }
+.result-box .amount {
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+.result-box .sub { font-size: .85rem; opacity: .75; margin-top: .25rem; }
+
+.deduction-table { border-radius: 12px; overflow: hidden; }
+.deduction-table .table { margin-bottom: 0; }
+.deduction-table .table th {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: .85rem;
+  border: none;
+}
+.deduction-table .table td { font-size: .9rem; vertical-align: middle; border-color: var(--border); }
+.deduction-table .table .total-row td {
+  background: var(--primary-light);
+  font-weight: 700;
+  color: var(--primary);
+}
+.tag { display: inline-block; font-size: .72rem; padding: 1px 7px; border-radius: 99px; }
+.tag-ins  { background: #ede9fe; color: #7c3aed; }
+.tag-tax  { background: #fef3c7; color: #d97706; }
+
+/* ── 푸터 ── */
+.site-footer {
+  background: #1f2937;
+  color: #9ca3af;
+  font-size: .82rem;
+}
+.site-footer a { color: #9ca3af; }
+
+/* ── 반응형 ── */
+@media (max-width: 767px) {
+  .hero h1 { font-size: 1.5rem; }
+  .result-box .amount { font-size: 1.9rem; }
+  .ad-header { display: none; }
+  .calc-card { padding: 1.25rem; }
+}
