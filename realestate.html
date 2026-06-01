@@ -41,10 +41,10 @@
     </div>
     <p class="text-muted small mb-4">국토교통부 실거래가 공개시스템 데이터 기준</p>
 
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
       <div>
-        <label for="dealMonth" class="form-label fw-semibold mb-1">조회 월</label>
-        <select id="dealMonth" class="form-select" style="width:180px;"></select>
+        <label for="dealDate" class="form-label fw-semibold mb-1">조회 날짜</label>
+        <input type="date" id="dealDate" class="form-control" style="width:180px;" />
       </div>
       <div class="mt-3">
         <button class="btn-calc" id="searchBtn" onclick="loadData()" style="width:auto; padding:.6rem 1.5rem;">조회</button>
@@ -69,7 +69,6 @@
               <th class="text-end">거래금액</th>
               <th class="text-center">전용면적</th>
               <th class="text-center">층</th>
-              <th class="text-center">계약일</th>
               <th>도로명</th>
             </tr>
           </thead>
@@ -117,21 +116,13 @@
 const WORKER_URL = 'https://utilmoeum-proxy.stdioh.workers.dev';
 const LAWD_CD    = '11500'; // 서울 강서구
 
-// ── 월 선택 드롭다운 초기화 ──
-(function initMonths() {
-  const sel = document.getElementById('dealMonth');
-  const now = new Date();
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const yyyy = d.getFullYear();
-    const mm   = String(d.getMonth() + 1).padStart(2, '0');
-    const val  = `${yyyy}${mm}`;
-    const label = `${yyyy}년 ${parseInt(mm)}월`;
-    const opt = document.createElement('option');
-    opt.value = val;
-    opt.textContent = label;
-    sel.appendChild(opt);
-  }
+// ── 날짜 기본값: 오늘 ──
+(function initDate() {
+  const today = new Date();
+  const yyyy  = today.getFullYear();
+  const mm    = String(today.getMonth() + 1).padStart(2, '0');
+  const dd    = String(today.getDate()).padStart(2, '0');
+  document.getElementById('dealDate').value = `${yyyy}-${mm}-${dd}`;
 })();
 
 function fmtPrice(raw) {
@@ -152,14 +143,20 @@ function getTag(xml, tag) {
 }
 
 async function loadData() {
-  const dealYmd = document.getElementById('dealMonth').value;
+  const dateVal = document.getElementById('dealDate').value;
+  if (!dateVal) { alert('날짜를 선택해주세요.'); return; }
+
+  const [yyyy, mm, dd] = dateVal.split('-');
+  const dealYmd = `${yyyy}${mm}`;
+  const targetDay = parseInt(dd, 10);
 
   $('#resultArea').hide();
   $('#errorArea').hide();
   $('#loadingArea').show();
 
   try {
-    const url = `${WORKER_URL}?LAWD_CD=${LAWD_CD}&DEAL_YMD=${dealYmd}&numOfRows=100&pageNo=1`;
+    // 월 전체 조회 후 클라이언트에서 날짜 필터링 (API는 월 단위만 지원)
+    const url = `${WORKER_URL}?LAWD_CD=${LAWD_CD}&DEAL_YMD=${dealYmd}&numOfRows=1000&pageNo=1`;
     const res  = await fetch(url);
     const text = await res.text();
 
@@ -171,9 +168,14 @@ async function loadData() {
       throw new Error(getTag(xml, 'resultMsg') || '데이터 조회 실패');
     }
 
-    const items = Array.from(xml.querySelectorAll('item'));
+    const allItems = Array.from(xml.querySelectorAll('item'));
+    // 선택한 날짜만 필터링
+    const items = allItems.filter(item =>
+      parseInt(getTag(item, 'dealDay'), 10) === targetDay
+    );
+
     if (items.length === 0) {
-      throw new Error('해당 월의 거래 데이터가 없습니다.');
+      throw new Error(`${yyyy}년 ${parseInt(mm)}월 ${parseInt(dd)}일의 거래 데이터가 없습니다.`);
     }
 
     // 거래금액 기준 내림차순 정렬
@@ -183,12 +185,8 @@ async function loadData() {
       return pb - pa;
     });
 
-    const totalCount = getTag(xml, 'totalCount') || items.length;
-    const yyyy = dealYmd.slice(0, 4);
-    const mm   = parseInt(dealYmd.slice(4, 6));
-
-    $('#resultTitle').text(`${yyyy}년 ${mm}월 강서구 아파트 실거래가`);
-    $('#totalCount').text(`총 ${parseInt(totalCount).toLocaleString()}건`);
+    $('#resultTitle').text(`${yyyy}년 ${parseInt(mm)}월 ${parseInt(dd)}일 강서구 아파트 실거래가`);
+    $('#totalCount').text(`총 ${items.length}건`);
 
     const tbody = document.getElementById('resultBody');
     tbody.innerHTML = '';
@@ -198,9 +196,6 @@ async function loadData() {
       const price   = fmtPrice(getTag(item, 'dealAmount'));
       const area    = parseFloat(getTag(item, 'excluUseAr')).toFixed(1);
       const floor   = getTag(item, 'floor');
-      const year    = getTag(item, 'dealYear');
-      const month   = getTag(item, 'dealMonth').padStart(2, '0');
-      const day     = getTag(item, 'dealDay').padStart(2, '0');
       const road    = getTag(item, 'roadNm');
 
       const tr = document.createElement('tr');
@@ -209,7 +204,6 @@ async function loadData() {
         <td class="text-end fw-bold text-primary">${price}</td>
         <td class="text-center">${area}㎡</td>
         <td class="text-center">${floor}층</td>
-        <td class="text-center text-muted small">${year}.${month}.${day}</td>
         <td class="text-muted small">${road}</td>
       `;
       tbody.appendChild(tr);
@@ -225,6 +219,10 @@ async function loadData() {
     $('#errorArea').show();
   }
 }
+
+$('#dealDate').on('keydown', function (e) {
+  if (e.key === 'Enter') loadData();
+});
 
 // 페이지 로드 시 자동 조회
 $(function () { loadData(); });
