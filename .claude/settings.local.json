@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wrangler pages *)",
+      "Bash(curl -s \"https://utilmoeum-proxy.stdioh.workers.dev?LAWD_CD=11500&DEAL_YMD=202605&numOfRows=5&pageNo=1\")",
+      "Bash(curl -sv \"https://utilmoeum-proxy.stdioh.workers.dev?LAWD_CD=11500&DEAL_YMD=202605&numOfRows=5&pageNo=1\")",
+      "Bash(curl -s --tlsv1.2 \"https://utilmoeum-proxy.stdioh.workers.dev?LAWD_CD=11500&DEAL_YMD=202605&numOfRows=5&pageNo=1\")"
+    ]
+  }
+}

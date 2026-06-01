@@ -178,8 +178,8 @@ async function loadData() {
 
     // 거래금액 기준 내림차순 정렬
     items.sort((a, b) => {
-      const pa = parseInt(getTag(a, '거래금액').replace(/,/g, ''), 10);
-      const pb = parseInt(getTag(b, '거래금액').replace(/,/g, ''), 10);
+      const pa = parseInt(getTag(a, 'dealAmount').replace(/,/g, ''), 10);
+      const pb = parseInt(getTag(b, 'dealAmount').replace(/,/g, ''), 10);
       return pb - pa;
     });
 
@@ -194,14 +194,14 @@ async function loadData() {
     tbody.innerHTML = '';
 
     items.forEach(item => {
-      const aptName = getTag(item, '아파트');
-      const price   = fmtPrice(getTag(item, '거래금액'));
-      const area    = parseFloat(getTag(item, '전용면적')).toFixed(1);
-      const floor   = getTag(item, '층');
-      const year    = getTag(item, '년');
-      const month   = getTag(item, '월').padStart(2, '0');
-      const day     = getTag(item, '일').padStart(2, '0');
-      const road    = getTag(item, '도로명');
+      const aptName = getTag(item, 'aptNm');
+      const price   = fmtPrice(getTag(item, 'dealAmount'));
+      const area    = parseFloat(getTag(item, 'excluUseAr')).toFixed(1);
+      const floor   = getTag(item, 'floor');
+      const year    = getTag(item, 'dealYear');
+      const month   = getTag(item, 'dealMonth').padStart(2, '0');
+      const day     = getTag(item, 'dealDay').padStart(2, '0');
+      const road    = getTag(item, 'roadNm');
 
       const tr = document.createElement('tr');
       tr.innerHTML = `

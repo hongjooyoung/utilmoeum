@@ -1,0 +1,24 @@
+{
+  "name": "cop",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hongjooyoung/utilmoeum.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hongjooyoung/utilmoeum/issues"
+  },
+  "homepage": "https://github.com/hongjooyoung/utilmoeum#readme",
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}

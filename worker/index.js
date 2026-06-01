@@ -30,10 +30,14 @@ export default {
       pageNo,
     });
 
-    const apiUrl = `https://apis.data.go.kr/1613000/RTMSOBJSvc/getRTMSDataSvcAptTradeDev?${params}`;
+    const apiUrl = `https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev?${params}`;
 
     try {
-      const res  = await fetch(apiUrl);
+      const res  = await fetch(apiUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        },
+      });
       const xml  = await res.text();
       return new Response(xml, {
         headers: {
