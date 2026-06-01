@@ -1,3 +1,7 @@
 name = "utilmoeum-proxy"
 main = "index.js"
 compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "VISITORS"
+id = "5e0da45d365f4026b43be0067a646557"

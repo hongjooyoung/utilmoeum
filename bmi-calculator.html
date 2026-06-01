@@ -150,6 +150,9 @@
     <div class="text-center">
       <p class="mb-1">© 2024 유틸모음. 제공하는 계산 결과는 참고용이며 법적 효력이 없습니다.</p>
       <p class="mb-0"><a href="#">이용약관</a> · <a href="#">개인정보처리방침</a></p>
+      <p class="mb-0 mt-2">
+        <span id="visitor-count" class="text-muted" style="font-size:.8rem;">👁 방문자 집계 중...</span>
+      </p>
     </div>
   </div>
 </footer>
@@ -220,6 +223,27 @@ function calculate() {
 $('#height, #weight').on('keydown', function (e) {
   if (e.key === 'Enter') calculate();
 });
+
+(async function () {
+  const API = 'https://utilmoeum-proxy.stdioh.workers.dev/api/visitors';
+  try {
+    let count;
+    if (!sessionStorage.getItem('visit_counted')) {
+      const res = await fetch(API, { method: 'POST' });
+      const data = await res.json();
+      count = data.count;
+      sessionStorage.setItem('visit_counted', '1');
+    } else {
+      const res = await fetch(API);
+      const data = await res.json();
+      count = data.count;
+    }
+    document.getElementById('visitor-count').textContent =
+      '👁 누적 방문자: ' + count.toLocaleString('ko-KR') + '명';
+  } catch (e) {
+    document.getElementById('visitor-count').textContent = '';
+  }
+})();
 </script>
 </body>
 </html>
