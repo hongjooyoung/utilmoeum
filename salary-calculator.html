@@ -317,7 +317,7 @@ $('#annualSalary').on('keydown', function (e) {
       count = data.count;
     }
     document.getElementById('visitor-count').textContent =
-      '👁 누적 방문자: ' + count.toLocaleString('ko-KR') + '명';
+      '👁 오늘 방문자: ' + count.toLocaleString('ko-KR') + '명';
   } catch (e) {
     document.getElementById('visitor-count').textContent = '';
   }

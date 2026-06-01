@@ -15,14 +15,19 @@ export default {
     if (url.pathname === '/api/visitors') {
       const headers = { ...CORS, 'Content-Type': 'application/json' };
 
+      // 한국 시간(UTC+9) 기준 오늘 날짜 키
+      const kstDate = new Date(Date.now() + 9 * 60 * 60 * 1000)
+        .toISOString().slice(0, 10);
+      const key = `visits:${kstDate}`;
+
       if (request.method === 'POST') {
-        const current = parseInt(await env.VISITORS.get('total') || '0');
+        const current = parseInt(await env.VISITORS.get(key) || '0');
         const next = current + 1;
-        await env.VISITORS.put('total', String(next));
+        await env.VISITORS.put(key, String(next), { expirationTtl: 60 * 60 * 24 * 90 });
         return Response.json({ count: next }, { headers });
       }
 
-      const count = parseInt(await env.VISITORS.get('total') || '0');
+      const count = parseInt(await env.VISITORS.get(key) || '0');
       return Response.json({ count }, { headers });
     }
 
