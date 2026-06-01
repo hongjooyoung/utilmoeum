@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>제비뽑기 - 유틸모음</title>
+  <meta name="description" content="이름을 입력하고 당첨자 수를 정해 랜덤으로 뽑아보세요. 스포트라이트 애니메이션으로 두근두근 제비뽑기!" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="제비뽑기 - 유틸모음" />
+  <meta property="og:description" content="이름을 입력하고 당첨자 수를 정해 랜덤으로 뽑아보세요." />
+  <meta property="og:url" content="https://utilmoeum.pages.dev/lottery.html" />
+  <link rel="canonical" href="https://utilmoeum.pages.dev/lottery.html" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ────────────── 헤더 ────────────── -->
+<header class="site-header py-3">
+  <div class="container d-flex align-items-center justify-content-between">
+    <a href="index.html" class="site-logo">⚙️ 유틸모음</a>
+    <a href="index.html" class="btn btn-sm btn-outline-secondary">← 목록으로</a>
+  </div>
+</header>
+
+<!-- ────────────── 광고: 헤더 하단 728x90 ────────────── -->
+<div class="py-2 bg-white border-bottom">
+  <div class="container d-flex justify-content-center">
+    <div class="ad-slot ad-header">광고 (728×90)</div>
+  </div>
+</div>
+
+<!-- ────────────── 본문 ────────────── -->
+<main class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+
+      <!-- ① 설정 카드 -->
+      <div id="setupCard" class="calc-card mb-4">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span style="font-size:1.6rem;">🎲</span>
+          <span class="calc-title">제비뽑기</span>
+        </div>
+        <p class="text-muted small mb-4">참가자 이름을 입력하고 당첨자 수를 설정한 뒤 뽑기를 시작하세요</p>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            참가자 이름
+            <span class="text-muted fw-normal">(한 줄에 하나씩)</span>
+          </label>
+          <textarea id="nameInput" class="form-control" rows="7"
+            placeholder="홍길동&#10;이순신&#10;김유신&#10;강감찬&#10;..."></textarea>
+          <div class="form-text" id="nameCount">0명 입력됨</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">당첨자 수</label>
+          <div class="d-flex align-items-center gap-2">
+            <input type="number" id="winnerCount" class="form-control"
+              value="1" min="1" style="max-width:100px;" />
+            <span class="text-muted small">명</span>
+          </div>
+        </div>
+
+        <button class="btn-calc" onclick="startLottery()">🎲 뽑기 시작!</button>
+      </div>
+
+      <!-- ② 뽑기 카드 -->
+      <div id="lotteryCard" class="calc-card mb-4" style="display:none;">
+
+        <div class="text-center mb-4">
+          <div id="roundBadge"
+            class="d-inline-block text-white fw-bold px-3 py-1 rounded-pill mb-2"
+            style="background:var(--primary); font-size:1rem;">
+            1번째 당첨자
+          </div>
+          <div id="drawStatus" class="draw-status text-muted">
+            버튼을 눌러 뽑기를 시작하세요
+          </div>
+        </div>
+
+        <div id="nameGrid" class="name-grid mb-4"></div>
+
+        <div class="text-center">
+          <button id="drawBtn" class="btn-calc" onclick="drawNext()"
+            style="max-width:220px; margin:0 auto; display:block;">
+            🎯 뽑기!
+          </button>
+        </div>
+      </div>
+
+      <!-- ③ 결과 카드 -->
+      <div id="resultCard" class="calc-card" style="display:none;">
+        <h3 class="fw-bold mb-3" style="font-size:1rem;">🏆 당첨자</h3>
+        <div id="winnerList"></div>
+        <button id="resetBtn" class="btn-calc mt-3" onclick="resetLottery()" style="display:none;">
+          🔄 다시 하기
+        </button>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- ────────────── 광고: 결과 하단 300x250 ────────────── -->
+<div class="container d-flex justify-content-center my-4">
+  <div class="ad-slot ad-result">광고 (300×250)</div>
+</div>
+
+<!-- ────────────── 푸터 ────────────── -->
+<footer class="site-footer py-4">
+  <div class="container">
+    <div class="d-flex justify-content-center mb-3">
+      <div class="ad-slot ad-footer">광고 (320×50)</div>
+    </div>
+    <div class="text-center">
+      <p class="mb-1">© 2024 유틸모음. 제공하는 계산 결과는 참고용이며 법적 효력이 없습니다.</p>
+      <p class="mb-0"><a href="#">이용약관</a> · <a href="#">개인정보처리방침</a></p>
+      <p class="mb-0 mt-2">
+        <span id="visitor-count" class="text-muted" style="font-size:.8rem;">👁 방문자 집계 중...</span>
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+// ─────────────────────────────────────────
+//  상태
+// ─────────────────────────────────────────
+let pool       = [];   // 아직 안 뽑힌 참가자 인덱스
+let winners    = [];   // 당첨자 이름 목록
+let totalWin   = 1;
+let round      = 0;
+let animating  = false;
+
+// ─────────────────────────────────────────
+//  이름 입력 실시간 카운트
+// ─────────────────────────────────────────
+$('#nameInput').on('input', function () {
+  const names = parseNames();
+  $('#nameCount').text(names.length + '명 입력됨');
+
+  // 당첨자 수 상한 보정
+  const max = Math.max(1, names.length - 1);
+  const cur = parseInt($('#winnerCount').val()) || 1;
+  if (cur > max) $('#winnerCount').val(max);
+  $('#winnerCount').attr('max', max);
+});
+
+function parseNames() {
+  return $('#nameInput').val()
+    .split('\n')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+}
+
+// ─────────────────────────────────────────
+//  시작
+// ─────────────────────────────────────────
+function startLottery() {
+  const names = parseNames();
+  if (names.length < 2) {
+    alert('참가자를 2명 이상 입력해주세요.');
+    return;
+  }
+
+  totalWin = Math.min(parseInt($('#winnerCount').val()) || 1, names.length - 1);
+  pool    = names.map((_, i) => i);
+  winners = [];
+  round   = 0;
+
+  // 이름 카드 생성
+  const grid = $('#nameGrid').empty();
+  names.forEach((name, i) => {
+    grid.append(`<div class="name-card" data-i="${i}">${name}</div>`);
+  });
+
+  $('#setupCard').hide();
+  $('#resultCard').hide();
+  $('#winnerList').empty();
+  $('#resetBtn').hide();
+  $('#lotteryCard').show();
+  updateRound();
+}
+
+// ─────────────────────────────────────────
+//  라운드 UI 갱신
+// ─────────────────────────────────────────
+function updateRound() {
+  $('#roundBadge').text((round + 1) + '번째 당첨자');
+  $('#drawStatus').text('버튼을 눌러 뽑기를 시작하세요');
+  $('#drawBtn').prop('disabled', false).text('🎯 뽑기!');
+}
+
+// ─────────────────────────────────────────
+//  뽑기 애니메이션
+// ─────────────────────────────────────────
+function drawNext() {
+  if (animating) return;
+  animating = true;
+  $('#drawBtn').prop('disabled', true).text('두근두근...');
+
+  const eligible = pool.slice(); // 아직 안 뽑힌 인덱스 목록
+  const cards    = eligible.map(i => $(`[data-i="${i}"]`)[0]);
+
+  const totalMs  = 2600;
+  const start    = Date.now();
+  let lastCard   = null;
+
+  function speed(t) {
+    // t: 0→1, 반환값: ms. 처음 빠르다가 점점 느려짐
+    return 45 + 380 * Math.pow(t, 2.8);
+  }
+
+  function tick() {
+    const t = Math.min((Date.now() - start) / totalMs, 1);
+
+    if (t >= 1) {
+      // 최종 당첨자 확정
+      $(lastCard).removeClass('spotlight').addClass('winner');
+      const winnerIdx  = parseInt($(lastCard).data('i'));
+      const winnerName = $(lastCard).text();
+
+      pool    = pool.filter(i => i !== winnerIdx);
+      winners.push(winnerName);
+      round++;
+
+      onWinnerPicked(winnerName);
+      animating = false;
+      return;
+    }
+
+    if (lastCard) $(lastCard).removeClass('spotlight');
+    lastCard = cards[Math.floor(Math.random() * cards.length)];
+    $(lastCard).addClass('spotlight');
+
+    setTimeout(tick, speed(t));
+  }
+
+  tick();
+}
+
+// ─────────────────────────────────────────
+//  당첨자 처리
+// ─────────────────────────────────────────
+function onWinnerPicked(name) {
+  $('#drawStatus').html(`🎉 <strong>${escHtml(name)}</strong> 당첨!`);
+
+  // 결과 카드에 추가
+  $('#resultCard').show();
+  $('#winnerList').append(`
+    <div class="winner-item">
+      <span style="font-size:1.3rem;">🏆</span>
+      <span>${round}등&nbsp; ${escHtml(name)}</span>
+    </div>
+  `);
+
+  if (round < totalWin) {
+    // 다음 라운드 준비
+    updateRound();
+    $('#roundBadge').text((round + 1) + '번째 당첨자');
+    $('#drawStatus').html(`🎉 <strong>${escHtml(name)}</strong> 당첨! 다음 당첨자를 뽑아보세요`);
+    $('#drawBtn').prop('disabled', false).text('🎯 다음 당첨자 뽑기!');
+  } else {
+    // 모두 완료
+    $('#drawStatus').html('🎊 모든 당첨자가 결정됐습니다!');
+    $('#drawBtn').hide();
+    $('#resetBtn').show();
+    launchConfetti();
+  }
+}
+
+// ─────────────────────────────────────────
+//  리셋
+// ─────────────────────────────────────────
+function resetLottery() {
+  $('#lotteryCard').hide();
+  $('#drawBtn').show().prop('disabled', false).text('🎯 뽑기!');
+  $('#resultCard').hide();
+  $('#winnerList').empty();
+  $('#resetBtn').hide();
+  $('#nameInput').val('');
+  $('#nameCount').text('0명 입력됨');
+  $('#winnerCount').val(1).attr('max', '');
+  $('#setupCard').show();
+}
+
+// ─────────────────────────────────────────
+//  컨페티
+// ─────────────────────────────────────────
+function launchConfetti() {
+  const colors = ['#1a56db','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4'];
+  const wrap   = $('<div class="confetti-wrap"></div>').appendTo('body');
+
+  for (let i = 0; i < 90; i++) {
+    const size = 7 + Math.random() * 9;
+    $('<div class="confetti-piece"></div>').css({
+      left:              Math.random() * 100 + 'vw',
+      width:             size + 'px',
+      height:            size + 'px',
+      background:        colors[i % colors.length],
+      animationDuration: (1.4 + Math.random() * 2.2) + 's',
+      animationDelay:    (Math.random() * 1.2) + 's',
+    }).appendTo(wrap);
+  }
+
+  setTimeout(() => wrap.remove(), 5000);
+}
+
+// ─────────────────────────────────────────
+//  XSS 방지용 이스케이프
+// ─────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─────────────────────────────────────────
+//  방문자 카운터
+// ─────────────────────────────────────────
+(async function () {
+  const API = 'https://utilmoeum-proxy.stdioh.workers.dev/api/visitors';
+  try {
+    let count;
+    if (!sessionStorage.getItem('visit_counted')) {
+      const res = await fetch(API, { method: 'POST' });
+      const data = await res.json();
+      count = data.count;
+      sessionStorage.setItem('visit_counted', '1');
+    } else {
+      const res = await fetch(API);
+      const data = await res.json();
+      count = data.count;
+    }
+    document.getElementById('visitor-count').textContent =
+      '👁 오늘 방문자: ' + count.toLocaleString('ko-KR') + '명';
+  } catch (e) {
+    document.getElementById('visitor-count').textContent = '';
+  }
+})();
+</script>
+</body>
+</html>
