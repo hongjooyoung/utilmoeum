@@ -89,6 +89,7 @@
           <div id="drawStatus" class="draw-status text-muted">
             먼저 골인하는 이름이 당첨!
           </div>
+          <div id="currentRank" class="mt-2" style="display:none; font-size:.9rem; line-height:1.9;"></div>
         </div>
 
         <div class="arena-wrap">
@@ -357,6 +358,29 @@ function countdownThenStart() {
 }
 
 // ─────────────────────────────────────────
+//  실시간 순위 표시
+// ─────────────────────────────────────────
+function updateRankDisplay() {
+  const racing = balls
+    .filter(b => !b.finished && b.y > 0)
+    .sort((a, b) => b.y - a.y);
+
+  const lines = [];
+  for (let i = 0; i < totalWin; i++) {
+    const rank = i + 1;
+    if (finishers[i]) {
+      lines.push(`<div>🏆 <strong>${rank}등: ${escHtml(finishers[i].name)}</strong> <span style="color:#10b981; font-size:.8em;">(골인!)</span></div>`);
+    } else {
+      const idx = i - finishers.length;
+      if (racing[idx]) {
+        lines.push(`<div>🏃 현재 ${rank}등: <strong>${escHtml(racing[idx].name)}</strong></div>`);
+      }
+    }
+  }
+  $('#currentRank').html(lines.join('')).css('display', lines.length ? '' : 'none');
+}
+
+// ─────────────────────────────────────────
 //  카메라 — 골에 가장 가까운 공을 부드럽게 추적
 // ─────────────────────────────────────────
 function updateCamera(dt) {
@@ -395,6 +419,7 @@ function loop(now) {
   for (let s = 0; s < SUB; s++) physics(sdt);
 
   updateCamera(dt);
+  updateRankDisplay();
   drawScene();
 
   if (raceOver) { finishRace(); return; }
@@ -678,6 +703,7 @@ function onFinish(ball, rank) {
 
 function finishRace() {
   $('#drawStatus').html('🎊 모든 당첨자가 결정됐습니다!');
+  $('#currentRank').hide();
   $('#resetBtns').css('display', 'flex');
   launchConfetti();
 }
