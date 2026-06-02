@@ -411,7 +411,7 @@ function loop(now) {
   let dt = (now - lastT) / 1000;
   lastT = now;
   if (dt > 0.033) dt = 0.033;        // 프레임 끊김 시 터널링 방지
-  dt *= 0.5;                         // 레이스 속도 절반
+  dt *= 0.75;                        // 레이스 속도 조정
 
   for (const b of balls) { b.tx = b.x; b.ty = b.y; }   // 잔상 기준점(프레임 시작 위치)
 
