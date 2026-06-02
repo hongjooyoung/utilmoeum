@@ -1,12 +1,11 @@
-const CACHE = 'utilmoeum-v1';
+const CACHE = 'utilmoeum-v2';
 const PRECACHE = [
   '/',
-  '/index.html',
-  '/salary-calculator.html',
-  '/bmi-calculator.html',
-  '/dday-calculator.html',
-  '/lottery.html',
-  '/realestate.html',
+  '/salary-calculator',
+  '/bmi-calculator',
+  '/dday-calculator',
+  '/lottery',
+  '/realestate',
   '/style.css',
   '/manifest.json',
 ];
@@ -28,7 +27,12 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // CDN 요청은 캐시 우선 → 없으면 네트워크
+  // 페이지 탐색은 네트워크 우선 (리다이렉트 문제 방지)
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
+  // 정적 자산은 캐시 우선 → 없으면 네트워크
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
